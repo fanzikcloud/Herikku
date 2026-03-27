@@ -39,6 +39,11 @@ permissions.json
 themes.json
 aliases.json
 
+# Но разрешаем example файлы
+!config.ini.example
+!proxy.ini.example
+!aliases.json.example
+
 # Info module media files
 info_media_*.gif
 info_media_*.mp4

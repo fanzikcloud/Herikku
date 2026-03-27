@@ -97,6 +97,18 @@ python main.py
 - `themes.json` - темы оформления
 - `aliases.json` - алиасы команд
 
+Для быстрого старта скопируйте example файлы:
+```bash
+cp config.ini.example config.ini
+cp proxy.ini.example proxy.ini
+```
+
+Отредактируйте `config.ini` и укажите:
+- `api_id` и `api_hash` с https://my.telegram.org/apps
+- `bot_token` от @BotFather для inline режима
+
+Если нужен прокси, настройте `proxy.ini`
+
 ### 📝 Использование
 
 Префикс по умолчанию: `.`
@@ -230,6 +242,18 @@ Configuration files are created on first run:
 - `permissions.json` - access permissions
 - `themes.json` - themes
 - `aliases.json` - command aliases
+
+For quick start, copy example files:
+```bash
+cp config.ini.example config.ini
+cp proxy.ini.example proxy.ini
+```
+
+Edit `config.ini` and specify:
+- `api_id` and `api_hash` from https://my.telegram.org/apps
+- `bot_token` from @BotFather for inline mode
+
+If you need proxy, configure `proxy.ini`
 
 ### 📝 Usage
 
