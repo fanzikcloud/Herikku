@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Herriku - Авторизация</title>
+    <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <h1>HERRIKU</h1>
+            <p>Авторизация аккаунта</p>
+        </div>
+        
+        <div id="alert" class="alert"></div>
+        
+        <!-- Шаг 1: Номер телефона -->
+        <div id="step-phone" class="step active">
+            <div class="form-group">
+                <label for="phone">
+                    <svg class="input-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M22 16.92V19.92C22 20.4728 21.5523 20.92 21 20.92H19C10.1634 20.92 3 13.7566 3 4.92V2.92C3 2.36772 3.44772 1.92 4 1.92H7C7.55228 1.92 8 2.36772 8 2.92V6.92C8 7.47228 7.55228 7.92 7 7.92H5.5C6.5 12.42 11.5 17.42 16 18.42V16.92C16 16.3677 16.4477 15.92 17 15.92H21C21.5523 15.92 22 16.3677 22 16.92Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Номер телефона
+                </label>
+                <input type="tel" id="phone" placeholder="+1234567890" autocomplete="tel">
+            </div>
+            <button onclick="sendCode()" class="btn">
+                <span class="btn-text">Отправить код</span>
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- Шаг 2: Код -->
+        <div id="step-code" class="step">
+            <div class="form-group">
+                <label for="code">
+                    <svg class="input-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="2"/>
+                        <path d="M7 11V7C7 4.79086 8.79086 3 11 3H13C15.2091 3 17 4.79086 17 7V11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Код из Telegram
+                </label>
+                <input type="text" id="code" placeholder="12345" autocomplete="one-time-code">
+            </div>
+            <button onclick="verifyCode()" class="btn">
+                <span class="btn-text">Подтвердить</span>
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- Шаг 3: Пароль 2FA -->
+        <div id="step-password" class="step">
+            <div class="form-group">
+                <label for="password">
+                    <svg class="input-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                        <path d="M12 5V3M12 21V19M5 12H3M21 12H19M7.05 7.05L5.64 5.64M18.36 18.36L16.95 16.95M7.05 16.95L5.64 18.36M18.36 5.64L16.95 7.05" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Пароль 2FA
+                </label>
+                <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+            </div>
+            <button onclick="verifyPassword()" class="btn">
+                <span class="btn-text">Войти</span>
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M15 3H19C20.1046 3 21 3.89543 21 5V19C21 20.1046 20.1046 21 19 21H15M10 17L15 12M15 12L10 7M15 12H3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- Шаг 4: Успех -->
+        <div id="step-success" class="step">
+            <div class="success-message">
+                <svg class="success-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                    <path d="M8 12L11 15L16 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <h2>Успешно!</h2>
+                <p>Аккаунт авторизован</p>
+                <div id="user-info" class="user-info"></div>
+                <button onclick="location.reload()" class="btn btn-secondary">
+                    <span class="btn-text">Добавить еще аккаунт</span>
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+                <div class="hint">
+                    <svg class="hint-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                        <path d="M12 16V12M12 8H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Нажмите Ctrl+C в терминале для запуска
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/assets/script.js"></script>
+</body>
+</html>
