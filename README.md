@@ -8,9 +8,12 @@
 
 [🇷🇺 Русский](#-русская-версия) | [🇬🇧 English](#-english-version)
 
-[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
-[![Telethon](https://img.shields.io/badge/Telethon-Latest-orange.svg)](https://github.com/LonamiWebs/Telethon)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.8+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Telethon](https://img.shields.io/badge/Telethon-Latest-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://github.com/LonamiWebs/Telethon)
+[![License](https://img.shields.io/badge/License-MIT-success?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/fanzikcloud/Herikku?style=for-the-badge&logo=github&color=yellow)](https://github.com/fanzikcloud/Herikku/stargazers)
+[![Forks](https://img.shields.io/github/forks/fanzikcloud/Herikku?style=for-the-badge&logo=github&color=blue)](https://github.com/fanzikcloud/Herikku/network)
+[![Issues](https://img.shields.io/github/issues/fanzikcloud/Herikku?style=for-the-badge&logo=github&color=red)](https://github.com/fanzikcloud/Herikku/issues)
 
 </div>
 
