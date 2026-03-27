@@ -1,61 +1,14 @@
 [Telegram]
-# Получите API ID и API Hash на https://my.telegram.org/apps
-# Get your API ID and API Hash from https://my.telegram.org/apps
+# Получите на https://my.telegram.org/apps
 api_id = 12345678
 api_hash = 0123456789abcdef0123456789abcdef
 
-# Токен бота для inline режима (получите у @BotFather)
-# Bot token for inline mode (get from @BotFather)
+# Токен от @BotFather для inline режима
 bot_token = 1234567890:ABCdefGHIjklMNOpqrsTUVwxyz
 
 [Settings]
-# Префикс команд (по умолчанию: .)
-# Command prefix (default: .)
+# Префикс команд
 prefix = .
 
-# Язык интерфейса (ru/en)
-# Interface language (ru/en)
+# Язык (ru/en)
 language = ru
-
-# Автоматическое обновление модулей при запуске
-# Auto-update modules on startup
-auto_update = false
-
-# Логирование (true/false)
-# Logging (true/false)
-logging = true
-
-# Уровень логирования (DEBUG/INFO/WARNING/ERROR)
-# Logging level (DEBUG/INFO/WARNING/ERROR)
-log_level = INFO
-
-[WebAuth]
-# Порт для web авторизации
-# Port for web authorization
-port = 8080
-
-# Хост для web авторизации (0.0.0.0 для доступа извне)
-# Host for web authorization (0.0.0.0 for external access)
-host = 127.0.0.1
-
-[Modules]
-# Автозагрузка модулей при старте
-# Auto-load modules on startup
-auto_load = true
-
-# Список отключенных модулей (через запятую)
-# List of disabled modules (comma-separated)
-disabled_modules = 
-
-[Security]
-# Разрешить выполнение команд terminal только владельцу
-# Allow terminal commands only for owner
-terminal_owner_only = true
-
-# Максимальное количество попыток авторизации
-# Maximum authorization attempts
-max_auth_attempts = 3
-
-# Таймаут сессии в секундах (0 = без таймаута)
-# Session timeout in seconds (0 = no timeout)
-session_timeout = 0
