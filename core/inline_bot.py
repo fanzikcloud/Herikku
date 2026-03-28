@@ -155,16 +155,27 @@ Get your own: <a href='https://github.com/fanzikcloud/Herikku'>GitHub</a>"""
         if query and query != 'config':
             return
         builder = event.builder
-        buttons = [[Button.inline('⚙️ Общие настройки', b'settings_general'
-            )], [Button.inline('🔧 Префикс команд', b'settings_prefix')], [
-            Button.inline('📦 Модули', b'settings_modules')], [Button.inline
-            ('🌐 Прокси', b'settings_proxy')], [Button.inline(
-            'ℹ️ Информация', b'settings_info')]]
-        result = builder.article(title='⚙️ Настройки Herikku', text=
-            """<b>⚙️ Меню настроек Herikku Userbot</b>
-
-Выберите раздел для настройки:"""
-            , buttons=buttons)
+        
+        prefix = config.get('Settings', 'command_prefix', fallback='.')
+        
+        text = '🤖 <b>Herikku Control Panel</b>\n'
+        text += '═' * 30 + '\n\n'
+        text += f'⚙️ <b>Префикс:</b> <code>{prefix}</code>\n'
+        text += f'📦 <b>Модулей:</b> {len(user_modules)}\n\n'
+        text += '<i>Выберите раздел для управления</i>'
+        
+        buttons = [
+            [
+                Button.inline('⚙️ Настройки', b'menu_settings'),
+                Button.inline('📦 Модули', b'menu_modules')
+            ],
+            [
+                Button.inline('📊 Статистика', b'menu_stats'),
+                Button.inline('ℹ️ О боте', b'menu_info')
+            ]
+        ]
+        
+        result = builder.article(title='⚙️ Herikku Control Panel', text=text, buttons=buttons)
         await event.answer([result])
 
     @bot.on(events.CallbackQuery)
@@ -177,26 +188,171 @@ Get your own: <a href='https://github.com/fanzikcloud/Herikku'>GitHub</a>"""
             return
         current_config = configparser.ConfigParser()
         current_config.read('config.ini', encoding='utf-8')
-        if data == 'settings_general':
-            text = '<b>⚙️ Общие настройки</b>\n\n'
-            text += f"""📱 Устройство: <code>{current_config.get('Telegram', 'device_model', fallback='N/A')}</code>
-"""
-            text += f"""🖥 Система: <code>{current_config.get('Telegram', 'system_version', fallback='N/A')}</code>
-"""
-            text += f"""📝 Сессия: <code>{current_config.get('Telegram', 'session_name', fallback='N/A')}</code>
-"""
-            buttons = [[Button.inline('◀️ Назад', b'back_main')]]
+        
+        if data == 'back_main' or data == 'menu_main':
+            prefix = current_config.get('Settings', 'command_prefix', fallback='.')
+            
+            text = '🤖 <b>Herikku Control Panel</b>\n'
+            text += '═' * 30 + '\n\n'
+            text += f'⚙️ <b>Префикс:</b> <code>{prefix}</code>\n'
+            text += f'📦 <b>Модулей:</b> {len(user_modules)}\n\n'
+            text += '<i>Выберите раздел для управления</i>'
+            
+            buttons = [
+                [
+                    Button.inline('⚙️ Настройки', b'menu_settings'),
+                    Button.inline('📦 Модули', b'menu_modules')
+                ],
+                [
+                    Button.inline('📊 Статистика', b'menu_stats'),
+                    Button.inline('ℹ️ О боте', b'menu_info')
+                ]
+            ]
             await event.edit(text, buttons=buttons)
+        
+        elif data == 'menu_settings':
+            text = '<b>⚙️ Настройки</b>\n'
+            text += '─' * 30 + '\n\n'
+            text += '<i>Управление параметрами юзербота</i>'
+            
+            buttons = [
+                [Button.inline('🔧 Префикс команд', b'settings_prefix')],
+                [Button.inline('🌐 Прокси', b'settings_proxy')],
+                [Button.inline('🖥️ Система', b'settings_system')],
+                [Button.inline('◀️ Главное меню', b'back_main')]
+            ]
+            await event.edit(text, buttons=buttons)
+        
+        elif data == 'menu_modules':
+            text = '<b>📦 Управление модулями</b>\n'
+            text += '─' * 30 + '\n\n'
+            text += f'<b>Загружено:</b> {len(user_modules)} модулей\n\n'
+            
+            buttons = []
+            
+            configurable_modules = []
+            for module_name, module_instance in user_modules.items():
+                if hasattr(module_instance, 'CONFIG_HANDLER') and module_instance.CONFIG_HANDLER:
+                    icon = getattr(module_instance, 'CONFIG_ICON', '⚙️')
+                    configurable_modules.append((module_name, module_instance, icon))
+            
+            if configurable_modules:
+                text += '<i>Модули с настройками:</i>\n'
+                for module_name, module_instance, icon in configurable_modules[:8]:
+                    button_text = f'{icon} {module_instance.NAME}'
+                    callback_data = f'module_{module_name}'.encode('utf-8')
+                    buttons.append([Button.inline(button_text, callback_data)])
+            else:
+                text += '<i>Нет модулей с настройками</i>\n'
+            
+            prefix = current_config.get('Settings', 'command_prefix', fallback='.')
+            text += f'\n<b>Команды:</b>\n'
+            text += f'• <code>{prefix}help</code> - список модулей\n'
+            text += f'• <code>{prefix}lm</code> - загрузить модуль\n'
+            text += f'• <code>{prefix}um</code> - выгрузить модуль'
+            
+            buttons.append([Button.inline('◀️ Главное меню', b'back_main')])
+            await event.edit(text, buttons=buttons)
+        
+        elif data == 'menu_stats':
+            import psutil
+            from datetime import datetime
+            
+            text = '<b>📊 Статистика</b>\n'
+            text += '─' * 30 + '\n\n'
+            
+            try:
+                cpu_percent = psutil.cpu_percent(interval=0.1)
+                text += f'💻 <b>CPU:</b> {cpu_percent}%\n'
+            except:
+                pass
+            
+            try:
+                memory = psutil.virtual_memory()
+                text += f'🧠 <b>RAM:</b> {memory.percent}%\n'
+            except:
+                pass
+            
+            text += f'📦 <b>Модулей:</b> {len(user_modules)}\n'
+            
+            buttons = [[Button.inline('◀️ Главное меню', b'back_main')]]
+            await event.edit(text, buttons=buttons)
+        
+        elif data == 'menu_info':
+            text = '<b>ℹ️ О Herikku Userbot</b>\n'
+            text += '─' * 30 + '\n\n'
+            text += '<b>Herikku</b> - модульный Telegram юзербот\n\n'
+            text += '🚀 <b>Возможности:</b>\n'
+            text += '• Модульная архитектура\n'
+            text += '• Динамическая загрузка модулей\n'
+            text += '• Inline-управление\n'
+            text += '• Система прав доступа\n'
+            text += '• Поддержка тем\n'
+            text += '• Мультиаккаунт\n\n'
+            text += '📚 GitHub: <a href="https://github.com/fanzikcloud/Herikku">fanzikcloud/Herikku</a>'
+            
+            buttons = [
+                [Button.url('📦 GitHub', 'https://github.com/fanzikcloud/Herikku')],
+                [Button.inline('◀️ Главное меню', b'back_main')]
+            ]
+            await event.edit(text, buttons=buttons)
+        
         elif data == 'settings_prefix':
-            current_prefix = current_config.get('Settings',
-                'command_prefix', fallback='.')
-            text = (
-                f'<b>🔧 Префикс команд</b>\n\nТекущий префикс: <code>{current_prefix}</code>\n\n'
-                )
-            text += 'Для изменения префикса используйте команду:\n'
-            text += (
-                f'<code>{current_prefix}prefix &lt;новый_префикс&gt;</code>')
-            buttons = [[Button.inline('◀️ Назад', b'back_main')]]
+            current_prefix = current_config.get('Settings', 'command_prefix', fallback='.')
+            
+            text = '<b>🔧 Префикс команд</b>\n'
+            text += '─' * 30 + '\n\n'
+            text += f'⚙️ <b>Текущий префикс:</b> <code>{current_prefix}</code>\n\n'
+            text += '<b>Изменение префикса:</b>\n'
+            text += f'<code>{current_prefix}prefix &lt;новый_префикс&gt;</code>\n\n'
+            text += '<i>Примеры:</i> <code>.</code> <code>!</code> <code>/</code> <code>-</code>'
+            
+            buttons = [[Button.inline('◀️ Настройки', b'menu_settings')]]
+            await event.edit(text, buttons=buttons)
+        
+        elif data == 'settings_proxy':
+            text = '<b>🌐 Настройки прокси</b>\n'
+            text += '─' * 30 + '\n\n'
+            
+            if current_config.has_section('Proxy'):
+                proxy_enabled = current_config.get('Proxy', 'enabled', fallback='no')
+                enabled = proxy_enabled in ['yes', 'true', '1']
+                
+                status_emoji = '✅' if enabled else '❌'
+                text += f'{status_emoji} <b>Статус:</b> {"Включен" if enabled else "Выключен"}\n\n'
+                
+                if enabled:
+                    proxy_type = current_config.get('Proxy', 'type', fallback='N/A')
+                    host = current_config.get('Proxy', 'host', fallback='N/A')
+                    port = current_config.get('Proxy', 'port', fallback='N/A')
+                    
+                    text += f'📡 <b>Тип:</b> <code>{proxy_type}</code>\n'
+                    text += f'🌍 <b>Хост:</b> <code>{host}</code>\n'
+                    text += f'🔌 <b>Порт:</b> <code>{port}</code>\n'
+            else:
+                text += '❌ Прокси не настроен\n'
+            
+            text += '\n<i>Для настройки отредактируйте</i> <code>proxy.ini</code>'
+            
+            buttons = [[Button.inline('◀️ Настройки', b'menu_settings')]]
+            await event.edit(text, buttons=buttons)
+        
+        elif data == 'settings_system':
+            import sys
+            
+            text = '<b>🖥️ Системная информация</b>\n'
+            text += '─' * 30 + '\n\n'
+            
+            device = current_config.get('Telegram', 'device_model', fallback='N/A')
+            system = current_config.get('Telegram', 'system_version', fallback='N/A')
+            session = current_config.get('Telegram', 'session_name', fallback='N/A')
+            
+            text += f'📱 <b>Устройство:</b> <code>{device}</code>\n'
+            text += f'🖥️ <b>Система:</b> <code>{system}</code>\n'
+            text += f'📝 <b>Сессия:</b> <code>{session}</code>\n'
+            text += f'🐍 <b>Python:</b> <code>{sys.version.split()[0]}</code>\n'
+            
+            buttons = [[Button.inline('◀️ Настройки', b'menu_settings')]]
             await event.edit(text, buttons=buttons)
         elif data == 'settings_modules':
             text = '<b>📦 Управление модулями</b>\n\n'
