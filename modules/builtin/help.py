@@ -31,7 +31,7 @@ class HelpModule(Module):
             builder = event.builder
             prefix = config.get('Settings', 'command_prefix', fallback='.')
             modules_list = list(loaded_modules.items())
-            items_per_page = 5
+            items_per_page = 3
             total_pages = (len(modules_list) + items_per_page - 1
                 ) // items_per_page
             fmt = text_formatter
@@ -83,7 +83,7 @@ class HelpModule(Module):
                 return
             page_num = int(event.data.decode('utf-8').split('_')[-1])
             modules_list = list(loaded_modules.items())
-            items_per_page = 5
+            items_per_page = 3
             total_pages = (len(modules_list) + items_per_page - 1
                 ) // items_per_page
             if page_num < 1 or page_num > total_pages:
