@@ -1,7 +1,9 @@
 import os
 import configparser
 import socks
+from telethon import connection
 from core.text_formatter import TextFormatter
+
 PROXY_FILE = 'proxy.ini'
 
 
@@ -24,6 +26,20 @@ def load_proxy():
     port = proxy_config.getint('Proxy', 'port', fallback=1080)
     username = proxy_config.get('Proxy', 'username', fallback='').strip()
     password = proxy_config.get('Proxy', 'password', fallback='').strip()
+    
+    # Поддержка MTProto прокси
+    if proxy_type in ['mtproto', 'mtproxy']:
+        # Для MTProto прокси secret передается в password или username
+        secret = password if password else username
+        if not secret:
+            secret = '00000000000000000000000000000000' # Дефолтный секрет если не указан
+        
+        # Для MTProto Telethon использует специальный кортеж: (host, port, secret)
+        proxy = (host, port, secret)
+        print(TextFormatter.color(
+            f'🔒 Прокси: MTPROTO {host}:{port}', 'green'))
+        return proxy
+
     if proxy_type == 'socks5':
         ptype = socks.SOCKS5
     elif proxy_type == 'socks4':
@@ -34,6 +50,7 @@ def load_proxy():
         print(TextFormatter.color(f'❌ Неизвестный тип прокси: {proxy_type}',
             'red'))
         return None
+        
     proxy = ptype, host, port
     if username and password:
         proxy = ptype, host, port, True, username, password
@@ -44,3 +61,11 @@ def load_proxy():
         print(TextFormatter.color(
             f'🔒 Прокси: {proxy_type.upper()} {host}:{port}', 'green'))
     return proxy
+
+
+def is_mtproto_proxy(proxy):
+    """Проверяет, является ли прокси прокси-сервером MTProto"""
+    if proxy and isinstance(proxy, tuple) and len(proxy) == 3 and isinstance(proxy[2], str):
+        # Если третий элемент - строка, это secret для MTProto
+        return True
+    return False

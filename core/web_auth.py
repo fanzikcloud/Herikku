@@ -136,10 +136,19 @@ class WebAuthServer:
                 loop_ready.wait()
 
                 async def connect_and_send():
+                    from core.proxy_manager import is_mtproto_proxy
+                    from telethon import connection
+                    proxy_kwargs = {}
+                    if self.proxy_config:
+                        if is_mtproto_proxy(self.proxy_config):
+                            proxy_kwargs['connection'] = connection.ConnectionTcpMTProxyRandomizedIntermediate
+                            proxy_kwargs['proxy'] = self.proxy_config
+                        else:
+                            proxy_kwargs['proxy'] = self.proxy_config
+
                     client = TelegramClient(session_id, self.api_id, self.
                         api_hash, device_model=self.device_model,
-                        system_version=self.system_version, proxy=self.
-                        proxy_config)
+                        system_version=self.system_version, **proxy_kwargs)
                     await client.connect()
                     if await client.is_user_authorized():
                         me = await client.get_me()

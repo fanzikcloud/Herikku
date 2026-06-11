@@ -33,6 +33,17 @@ async def setup_account(client, api_id, api_hash, device_model,
     user_id = me.id
     config = get_account_config(user_id, account_configs)
     bot_token = config.get('InlineBot', 'token', fallback='').strip()
+    
+    from core.proxy_manager import is_mtproto_proxy
+    from telethon import connection
+    proxy_kwargs = {}
+    if proxy:
+        if is_mtproto_proxy(proxy):
+            proxy_kwargs['connection'] = connection.ConnectionTcpMTProxyRandomizedIntermediate
+            proxy_kwargs['proxy'] = proxy
+        else:
+            proxy_kwargs['proxy'] = proxy
+
     if not bot_token:
         print(TextFormatter.color(
             f'🤖 Настройка inline-бота для аккаунта {me.first_name}...', 'cyan')
@@ -78,9 +89,19 @@ async def load_additional_accounts(api_id, api_hash, device_model,
         for session_file in session_files:
             session_name_only = session_file.replace('.session', '')
             try:
+                from core.proxy_manager import is_mtproto_proxy
+                from telethon import connection
+                proxy_kwargs = {}
+                if proxy:
+                    if is_mtproto_proxy(proxy):
+                        proxy_kwargs['connection'] = connection.ConnectionTcpMTProxyRandomizedIntermediate
+                        proxy_kwargs['proxy'] = proxy
+                    else:
+                        proxy_kwargs['proxy'] = proxy
+
                 add_client = TelegramClient(session_name_only, api_id,
                     api_hash, device_model=device_model, system_version=
-                    system_version, proxy=proxy)
+                    system_version, **proxy_kwargs)
                 from telethon.extensions import html
                 add_client.parse_mode = html
                 from core.formatting import markdown_to_html
@@ -181,8 +202,19 @@ async def main():
     session_name = config.get('Telegram', 'session_name')
     command_prefix = config.get('Settings', 'command_prefix')
     print(TextFormatter.color('\n🚀 Запуск Herikku Userbot...', 'cyan'))
+    from core.proxy_manager import is_mtproto_proxy
+    from telethon import connection
+    
+    proxy_kwargs = {}
+    if proxy:
+        if is_mtproto_proxy(proxy):
+            proxy_kwargs['connection'] = connection.ConnectionTcpMTProxyRandomizedIntermediate
+            proxy_kwargs['proxy'] = proxy
+        else:
+            proxy_kwargs['proxy'] = proxy
+
     client = TelegramClient(session_name, api_id, api_hash, device_model=
-        device_model, system_version=system_version, proxy=proxy)
+        device_model, system_version=system_version, **proxy_kwargs)
     from telethon.extensions import html
     client.parse_mode = html
     from core.formatting import markdown_to_html

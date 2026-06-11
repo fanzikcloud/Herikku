@@ -29,6 +29,17 @@ async def check_and_clean_sessions(api_id, api_hash, device_model,
     removed_sessions = []
     active_bots = []
     removed_bots = []
+    
+    from core.proxy_manager import is_mtproto_proxy
+    from telethon import connection
+    proxy_kwargs = {}
+    if proxy:
+        if is_mtproto_proxy(proxy):
+            proxy_kwargs['connection'] = connection.ConnectionTcpMTProxyRandomizedIntermediate
+            proxy_kwargs['proxy'] = proxy
+        else:
+            proxy_kwargs['proxy'] = proxy
+
     print(TextFormatter.color('\n👤 Проверка пользовательских сессий:', 'cyan'))
     for session_file in user_session_files:
         session_name = session_file.replace('.session', '')
@@ -36,7 +47,7 @@ async def check_and_clean_sessions(api_id, api_hash, device_model,
         try:
             temp_client = TelegramClient(session_name, api_id, api_hash,
                 device_model=device_model, system_version=system_version,
-                proxy=proxy)
+                **proxy_kwargs)
             await temp_client.connect()
             if await temp_client.is_user_authorized():
                 try:
@@ -125,9 +136,19 @@ async def check_and_clean_sessions(api_id, api_hash, device_model,
                 print(TextFormatter.color(
                     f'\n🔎 Проверка bot: {session_name}', 'yellow'))
             try:
+                from core.proxy_manager import is_mtproto_proxy
+                from telethon import connection
+                proxy_kwargs = {}
+                if proxy:
+                    if is_mtproto_proxy(proxy):
+                        proxy_kwargs['connection'] = connection.ConnectionTcpMTProxyRandomizedIntermediate
+                        proxy_kwargs['proxy'] = proxy
+                    else:
+                        proxy_kwargs['proxy'] = proxy
+
                 temp_client = TelegramClient(session_name, api_id, api_hash,
                     device_model=device_model, system_version=
-                    system_version, proxy=proxy)
+                    system_version, **proxy_kwargs)
                 await temp_client.connect()
                 if await temp_client.is_user_authorized():
                     try:
@@ -239,9 +260,18 @@ async def check_and_clean_sessions(api_id, api_hash, device_model,
 async def check_single_session(session_name, api_id, api_hash, device_model,
     system_version, proxy=None):
     try:
+        from core.proxy_manager import is_mtproto_proxy
+        from telethon import connection
+        proxy_kwargs = {}
+        if proxy:
+            if is_mtproto_proxy(proxy):
+                proxy_kwargs['connection'] = connection.ConnectionTcpMTProxyRandomizedIntermediate
+                proxy_kwargs['proxy'] = proxy
+            else:
+                proxy_kwargs['proxy'] = proxy
+
         temp_client = TelegramClient(session_name, api_id, api_hash,
-            device_model=device_model, system_version=system_version, proxy
-            =proxy)
+            device_model=device_model, system_version=system_version, **proxy_kwargs)
         await temp_client.connect()
         if await temp_client.is_user_authorized():
             try:

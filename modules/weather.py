@@ -47,7 +47,7 @@ class WeatherModule(Module):
                             await event.edit(
                                 f'**🌤 Погода**\n\n❌ Город не найден: {city}')
                             return
-                        data = await response.json()
+                        data = await response.json(content_type=None)
                 current = data['current_condition'][0]
                 location = data['nearest_area'][0]
                 city_name = location.get('areaName', [{}])[0].get('value', city

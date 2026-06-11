@@ -150,9 +150,58 @@ class TextFormatter:
 
 def markdown_to_html(text: str) ->str:
     import re
-    text = re.sub('\\*\\*(.+?)\\*\\*', '<b>\\1</b>', text)
-    text = re.sub('`([^`]+?)`', '<code>\\1</code>', text)
-    text = re.sub('(?<!\\w)_([^_]+?)_(?!\\w)', '<i>\\1</i>', text)
+    # Если строка целиком обернута в тройные кавычки (возможно с пробелами/переносами по краям)
+    stripped = text.strip()
+    if stripped.startswith("```") and stripped.endswith("```"):
+        inner = stripped[3:-3]
+        if inner.startswith("\n"):
+            inner = inner[1:]
+        elif inner.startswith("\r\n"):
+            inner = inner[2:]
+        if inner.endswith("\n"):
+            inner = inner[:-1]
+        elif inner.endswith("\r\n"):
+            inner = inner[:-2]
+        return f"<pre>{inner}</pre>"
+    
+    # Сначала заменяем многострочные блоки внутри текста
+    text = re.sub(r'```(?:[a-zA-Z0-9]+)?\r?\n?(.*?)\r?\n?```', r'<pre>\1</pre>', text, flags=re.DOTALL)
+    # Затем заменяем инлайновые бэктики `
+    text = re.sub(r'`([^`]+?)`', r'<code>\1</code>', text)
+    # Жирный текст
+    text = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', text)
+    # Курсив
+    text = re.sub(r'(?<!\w)_([^_]+?)\_(?!\w)', r'<i>\1</i>', text)
+    # Поддержка Telegram цитат (blockquote и expandable blockquote)
+    # Сначала заменяем многострочные раскрывающиеся цитаты (если несколько строк подряд начинаются с >> или вся конструкция)
+    # Нам нужно объединить строки, идущие подряд с >> в один блок <blockquote expandable>...</blockquote>
+    # А строки подряд с > в обычный блок <blockquote>...</blockquote>
+    
+    # 1. Объединяем и преобразуем многострочные раскрываемые цитаты (блоки, где каждая строка начинается с >>)
+    # Ищем последовательности строк, начинающихся с >>
+    def replace_expandable_blocks(match):
+        lines = match.group(0).rstrip('\r\n').split('\n')
+        content_lines = []
+        for line in lines:
+            line_content = re.sub(r'^\s*>>\s*', '', line)
+            content_lines.append(line_content)
+        joined_content = "\n".join(content_lines)
+        return f'<blockquote expandable>{joined_content}</blockquote>'
+    
+    text = re.sub(r'(?:^\s*>>.*(?:\r?\n|$))+', replace_expandable_blocks, text, flags=re.MULTILINE)
+
+    # 2. Объединяем и преобразуем многострочные обычные цитаты (блоки, где каждая строка начинается с >)
+    def replace_normal_blocks(match):
+        lines = match.group(0).rstrip('\r\n').split('\n')
+        content_lines = []
+        for line in lines:
+            line_content = re.sub(r'^\s*>[^>]\s*', '', line)
+            content_lines.append(line_content)
+        joined_content = "\n".join(content_lines)
+        return f'<blockquote>{joined_content}</blockquote>'
+
+    text = re.sub(r'(?:^\s*>[^>].*(?:\r?\n|$))+', replace_normal_blocks, text, flags=re.MULTILINE)
+    
     return text
 
 

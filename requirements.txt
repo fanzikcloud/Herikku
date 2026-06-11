@@ -10,3 +10,5 @@ soundfile>=0.12.1
 cryptography>=41.0.0
 qrcode[pil]>=7.4.0
 emoji>=2.0.0
+yt-dlp>=2024.1.0
+tiktok-scraper>=0.1.0

@@ -110,9 +110,19 @@ class SystemModule(Module):
 📞 Номер: <code>{user_input}</code>
 ⏳ Подключение..."""
                                 )
-                            new_client = TelegramClient(session_name,
-                                api_id, api_hash, device_model=device_model,
-                                system_version=system_version)
+                        from core.proxy_manager import is_mtproto_proxy
+                        from telethon import connection
+                        proxy_kwargs = {}
+                        if proxy:
+                            if is_mtproto_proxy(proxy):
+                                proxy_kwargs['connection'] = connection.ConnectionTcpMTProxyRandomizedIntermediate
+                                proxy_kwargs['proxy'] = proxy
+                            else:
+                                proxy_kwargs['proxy'] = proxy
+
+                        new_client = TelegramClient(session_name,
+                            api_id, api_hash, device_model=device_model,
+                            system_version=system_version, **proxy_kwargs)
                             auth_data['client'] = new_client
                             await new_client.connect()
                             if await new_client.is_user_authorized():
@@ -320,9 +330,19 @@ class SystemModule(Module):
                 for session_file in session_files:
                     session_name = session_file.replace('.session', '')
                     try:
+                        from core.proxy_manager import is_mtproto_proxy
+                        from telethon import connection
+                        proxy_kwargs = {}
+                        if proxy:
+                            if is_mtproto_proxy(proxy):
+                                proxy_kwargs['connection'] = connection.ConnectionTcpMTProxyRandomizedIntermediate
+                                proxy_kwargs['proxy'] = proxy
+                            else:
+                                proxy_kwargs['proxy'] = proxy
+
                         test_client = TelegramClient(session_name, api_id,
                             api_hash, device_model=device_model,
-                            system_version=system_version)
+                            system_version=system_version, **proxy_kwargs)
                         await test_client.connect()
                         if await test_client.is_user_authorized():
                             acc_me = await test_client.get_me()
