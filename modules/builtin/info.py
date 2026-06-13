@@ -216,24 +216,14 @@ class InfoModule(Module):
                     buttons=buttons if buttons else None
                 )
             else:
-                # Если кнопка является ссылкой (is_url=True), мы можем передать эту ссылку прямо в аргумент url
-                # метода builder.article. В этом случае Telegram НЕ БУДЕТ присылать сообщение в чат!
-                # Вместо этого при клике на элемент inline-результата (кнопку в поиске) 
-                # Telegram моментально откроет эту ссылку в браузере, не отправляя никакого текста в чат.
-                if btn_dict and btn_dict.get('is_url', True) and btn_dict.get('value'):
-                    result = builder.article(
-                        title=btn_dict['text'],
-                        description=f"Открыть ссылку: {btn_dict['value']}",
-                        url=btn_dict['value'],
-                        text=info_text,
-                        buttons=buttons if buttons else None
-                    )
-                else:
-                    result = builder.article(
-                        title='👤 Информация о пользователе',
-                        text=info_text,
-                        buttons=buttons if buttons else None
-                    )
+                # Обычная статья (article) для отправки текстового сообщения с кастомными кнопками
+                # НЕ передаем аргумент url в builder.article, чтобы Telegram отправил полноценное сообщение
+                # в чат с прикрепленной к нему нативной URL-кнопкой Button.url!
+                result = builder.article(
+                    title='👤 Информация о пользователе',
+                    text=info_text,
+                    buttons=buttons if buttons else None
+                )
                 
             await event.answer([result], cache_time=0)
 
