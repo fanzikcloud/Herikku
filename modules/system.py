@@ -110,15 +110,16 @@ class SystemModule(Module):
 📞 Номер: <code>{user_input}</code>
 ⏳ Подключение..."""
                                 )
-                            from core.proxy_manager import is_mtproto_proxy
+                            from core.proxy_manager import is_mtproto_proxy, load_proxy
                             from telethon import connection
+                            acc_proxy = load_proxy()
                             proxy_kwargs = {}
-                            if proxy:
-                                if is_mtproto_proxy(proxy):
+                            if acc_proxy:
+                                if is_mtproto_proxy(acc_proxy):
                                     proxy_kwargs['connection'] = connection.ConnectionTcpMTProxyRandomizedIntermediate
-                                    proxy_kwargs['proxy'] = proxy
+                                    proxy_kwargs['proxy'] = acc_proxy
                                 else:
-                                    proxy_kwargs['proxy'] = proxy
+                                    proxy_kwargs['proxy'] = acc_proxy
 
                             new_client = TelegramClient(session_name,
                                 api_id, api_hash, device_model=device_model,
