@@ -237,8 +237,12 @@ Get your own: <a href='https://github.com/fanzikcloud/Herikku'>GitHub</a>"""
     async def callback_handler(event):
         data = event.data.decode('utf-8')
         
-        # Если кликнули по кастомной информационной кнопке Info, разрешаем обработку всем (или сверяем права в самом модуле Info)
-        if data == 'infobtn_alert':
+        # Если кликнули по кастомной информационной кнопке Info или игровым кнопкам TicTacToe, разрешаем обработку всем
+        if data == 'infobtn_alert' or data.startswith('ttt_'):
+            return
+            
+        if event.sender_id != owner_id:
+            await event.answer('❌ Эти кнопки не для вас!', alert=True)
             return
             
         if event.sender_id != owner_id:
