@@ -110,19 +110,19 @@ class SystemModule(Module):
 📞 Номер: <code>{user_input}</code>
 ⏳ Подключение..."""
                                 )
-                        from core.proxy_manager import is_mtproto_proxy
-                        from telethon import connection
-                        proxy_kwargs = {}
-                        if proxy:
-                            if is_mtproto_proxy(proxy):
-                                proxy_kwargs['connection'] = connection.ConnectionTcpMTProxyRandomizedIntermediate
-                                proxy_kwargs['proxy'] = proxy
-                            else:
-                                proxy_kwargs['proxy'] = proxy
+                            from core.proxy_manager import is_mtproto_proxy
+                            from telethon import connection
+                            proxy_kwargs = {}
+                            if proxy:
+                                if is_mtproto_proxy(proxy):
+                                    proxy_kwargs['connection'] = connection.ConnectionTcpMTProxyRandomizedIntermediate
+                                    proxy_kwargs['proxy'] = proxy
+                                else:
+                                    proxy_kwargs['proxy'] = proxy
 
-                        new_client = TelegramClient(session_name,
-                            api_id, api_hash, device_model=device_model,
-                            system_version=system_version, **proxy_kwargs)
+                            new_client = TelegramClient(session_name,
+                                api_id, api_hash, device_model=device_model,
+                                system_version=system_version, **proxy_kwargs)
                             auth_data['client'] = new_client
                             await new_client.connect()
                             if await new_client.is_user_authorized():
