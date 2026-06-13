@@ -8,7 +8,7 @@ class QRCodeModule(Module):
     NAME = 'QR Code'
     AUTHOR = 'Herikku'
     DESCRIPTION = 'Генерация красивых QR-кодов с разными стилями'
-    DEPENDENCIES = ['qrcode', 'Pil']
+    DEPENDENCIES = ['qrcode', 'Pillow']
     COMMANDS = {'qr <текст>': 'Создать обычный QR-код', 'qrround <текст>':
         'QR-код с круглыми точками', 'qrcircle <текст>': 'QR-код с кругами',
         'qrgap <текст>': 'QR-код с промежутками', 'qrgrad <текст>':

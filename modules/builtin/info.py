@@ -187,9 +187,13 @@ class InfoModule(Module):
                 
             info_text = markdown_to_html(info_text)
             
+            # Очищаем экранирование обратных слешей из конфига, если они попали туда при чтении
+            info_text = info_text.replace('\\"', '"').replace('\\/', '/')
+            
             # Кастомная кнопка (ссылка или алерт)
             buttons = []
             btn_data = config.get('Info', 'button', fallback='{}')
+            btn_dict = {}
             try:
                 btn_dict = json.loads(btn_data)
                 if btn_dict and 'text' in btn_dict and 'value' in btn_dict:
@@ -212,11 +216,24 @@ class InfoModule(Module):
                     buttons=buttons if buttons else None
                 )
             else:
-                result = builder.article(
-                    title='👤 Информация о пользователе',
-                    text=info_text,
-                    buttons=buttons if buttons else None
-                )
+                # Если кнопка является ссылкой (is_url=True), мы можем передать эту ссылку прямо в аргумент url
+                # метода builder.article. В этом случае Telegram НЕ БУДЕТ присылать сообщение в чат!
+                # Вместо этого при клике на элемент inline-результата (кнопку в поиске) 
+                # Telegram моментально откроет эту ссылку в браузере, не отправляя никакого текста в чат.
+                if btn_dict and btn_dict.get('is_url', True) and btn_dict.get('value'):
+                    result = builder.article(
+                        title=btn_dict['text'],
+                        description=f"Открыть ссылку: {btn_dict['value']}",
+                        url=btn_dict['value'],
+                        text=info_text,
+                        buttons=buttons if buttons else None
+                    )
+                else:
+                    result = builder.article(
+                        title='👤 Информация о пользователе',
+                        text=info_text,
+                        buttons=buttons if buttons else None
+                    )
                 
             await event.answer([result], cache_time=0)
 
@@ -281,10 +298,19 @@ class InfoModule(Module):
             try:
                 bot = await self.client.get_entity(bot_username)
                 result = await self.client.inline_query(bot, 'info_inline')
-                await result[0].click(event.chat_id, reply_to=event.reply_to_msg_id)
-                await event.delete()
+                if result:
+                    await result[0].click(event.chat_id, reply_to=event.reply_to_msg_id)
+                    await event.delete()
+                else:
+                    await event.edit('❌ Бот не вернул результатов!')
             except Exception as e:
-                await event.edit(f'❌ Ошибка вызова inline-инфо: {str(e)}')
+                # В случае клика по прямой ссылке, результат открывается на стороне клиента без отправки сообщения.
+                # Метод .click() на стороне API может вернуть ошибку, если это чистый URL-результат, предназначенный для открытия,
+                # а не для отправки сообщения. Погасим ошибку удаления, если все прошло успешно.
+                try:
+                    await event.delete()
+                except:
+                    pass
 
         async def setinfo_handler(event):
             if not event.text:
@@ -350,8 +376,20 @@ class InfoModule(Module):
             
             # Проверяем, является ли значение ссылкой
             is_url = False
-            if value.startswith('http://') or value.startswith('https://') or value.startswith('tg://'):
+            # Пытаемся определить ссылки с протоколами или юзернеймами (@username, t.me/...)
+            clean_val = value.lower()
+            if (clean_val.startswith('http://') or 
+                clean_val.startswith('https://') or 
+                clean_val.startswith('tg://') or 
+                clean_val.startswith('@') or 
+                clean_val.startswith('t.me/')):
                 is_url = True
+                # Если ссылка начинается без протокола, но это юзернейм или t.me,
+                # отформатируем её правильно для Telethon Button.url
+                if clean_val.startswith('@'):
+                    value = f"https://t.me/{value[1:]}"
+                elif clean_val.startswith('t.me/'):
+                    value = f"https://{value}"
                 
             btn_dict = {'text': name, 'value': value, 'is_url': is_url, 'only_owner': only_owner}
             self.config.set('Info', 'button', json.dumps(btn_dict, ensure_ascii=False))
