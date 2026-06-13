@@ -207,6 +207,10 @@ Get your own: <a href='https://github.com/fanzikcloud/Herikku'>GitHub</a>"""
             return
 
         query = event.text.strip().lower()
+        if query.startswith('ttt_duel_') or query == 'info_inline':
+            # Пропускаем специальные внутренние inline-запросы модулей, чтобы они не перебивались Control Panel
+            return
+
         if query and query != 'config':
             return
         builder = event.builder
@@ -239,10 +243,6 @@ Get your own: <a href='https://github.com/fanzikcloud/Herikku'>GitHub</a>"""
         
         # Если кликнули по кастомной информационной кнопке Info или игровым кнопкам TicTacToe, разрешаем обработку всем
         if data == 'infobtn_alert' or data.startswith('ttt_'):
-            return
-            
-        if event.sender_id != owner_id:
-            await event.answer('❌ Эти кнопки не для вас!', alert=True)
             return
             
         if event.sender_id != owner_id:
