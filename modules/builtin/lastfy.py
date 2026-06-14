@@ -19,7 +19,7 @@ class LastfyModule(Module):
     CONFIG_ICON = '🎵'
 
     # Дефолтный публичный API-ключ Last.fm для удобства (работает из коробки)
-    DEFAULT_API_KEY = '2c22c04ba315900cbb0f552ff99edef0'
+    DEFAULT_API_KEY = 'b25b959554ed76058ac220b7b2e0a026'
 
     async def init(self, client, command_prefix, events, load_module,
         loaded_modules, config, config_path, install_package, bot_start_time):
@@ -68,7 +68,11 @@ class LastfyModule(Module):
                 async with aiohttp.ClientSession() as session:
                     async with session.get(url, params=params, timeout=10) as response:
                         if response.status != 200:
-                            await event.edit(f"<b>❌ Ошибка Last.fm API:</b> HTTP {response.status}")
+                            await event.edit(
+                                f"<b>❌ Ошибка Last.fm API:</b> HTTP {response.status}\n"
+                                f"<i>Возможно, ваш API-ключ недействителен. Вы можете получить бесплатный ключ на Last.fm:</i>\n"
+                                f"https://www.last.fm/api/account/create"
+                            )
                             return
                         data = await response.json()
 
