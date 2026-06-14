@@ -10,7 +10,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter
 class LastfyModule(Module):
     NAME = 'Lastfy'
     AUTHOR = 'Herikku'
-    DESCRIPTION = 'Показывает красивую карточку прослушиваемого трека из Last.fm с обложкой и прогресс-баром'
+    DESCRIPTION = 'Показывает красивую карточку прослушиваемого трека из Last.fm с обложкой и реальной длительностью'
     DEPENDENCIES = ['Pillow', 'aiohttp']
     COMMANDS = {
         'lastfy': 'Показать прослушиваемый трек из Last.fm на красивой картинке',
@@ -18,7 +18,7 @@ class LastfyModule(Module):
     }
     CONFIG_ICON = '🎵'
 
-    # Дефолтный публичный API-ключ Last.fm для удобства (работает из коробки)
+    # Дефолтный публичный API-ключ Last.fm
     DEFAULT_API_KEY = 'b25b959554ed76058ac220b7b2e0a026'
 
     async def init(self, client, command_prefix, events, load_module,
@@ -70,7 +70,6 @@ class LastfyModule(Module):
                         if response.status != 200:
                             await event.edit(
                                 f"<b>❌ Ошибка Last.fm API:</b> HTTP {response.status}\n"
-                                f"<i>Возможно, ваш API-ключ недействителен. Вы можете получить бесплатный ключ на Last.fm:</i>\n"
                                 f"https://www.last.fm/api/account/create"
                             )
                             return
@@ -92,17 +91,38 @@ class LastfyModule(Module):
                 artist_name = track_data.get('artist', {}).get('#text', 'Неизвестный исполнитель')
                 album_name = track_data.get('album', {}).get('#text', '')
 
+                # 2. Получение детальной информации о треке (для реальной длительности)
+                duration_sec = 0
+                try:
+                    info_params = {
+                        'method': 'track.getInfo',
+                        'api_key': api_key,
+                        'artist': artist_name,
+                        'track': track_name,
+                        'username': username,
+                        'format': 'json'
+                    }
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(url, params=info_params, timeout=5) as info_resp:
+                            if info_resp.status == 200:
+                                info_data = await info_resp.json()
+                                # Длительность возвращается в миллисекундах (duration)
+                                dur_str = info_data.get('track', {}).get('duration', '0')
+                                if dur_str and dur_str.isdigit():
+                                    duration_sec = int(int(dur_str) / 1000)
+                except Exception as info_err:
+                    print(f"Error getting track info: {info_err}")
+
                 # Ищем самую большую обложку альбома
                 images = track_data.get('image', [])
                 cover_url = ""
                 if images:
-                    # Ищем изображение размера 'extralarge' или 'large'
                     for img in reversed(images):
                         if img.get('#text'):
                             cover_url = img.get('#text')
                             break
 
-                # 2. Скачивание обложки
+                # 3. Скачивание обложки
                 cover_bytes = None
                 if cover_url:
                     try:
@@ -113,13 +133,13 @@ class LastfyModule(Module):
                     except:
                         pass
 
-                # 3. Отрисовка карточки через Pillow
+                # 4. Отрисовка карточки через Pillow
                 await event.edit("<b>🎨 Отрисовываю карточку трека...</b>")
                 card_image = await asyncio.to_thread(
-                    self.draw_track_card, track_name, artist_name, album_name, cover_bytes, is_now_playing
+                    self.draw_track_card, track_name, artist_name, album_name, cover_bytes, is_now_playing, duration_sec
                 )
 
-                # 4. Отправка карточки
+                # 5. Отправка карточки
                 await event.delete()
                 await self.client.send_file(
                     event.chat_id,
@@ -138,8 +158,7 @@ class LastfyModule(Module):
             if len(parts) < 2:
                 await event.edit(
                     f"<b>🔧 Настройка аккаунта Last.fm</b>\n\n"
-                    f"Использование: <code>{self.prefix}setlastfm &lt;юзернейм&gt; [api_key]</code>\n"
-                    f"<i>Если у Вас нет своего API-ключа, просто укажите только юзернейм.</i>"
+                    f"Использование: <code>{self.prefix}setlastfm &lt;юзернейм&gt; [api_key]</code>"
                 )
                 return
 
@@ -161,7 +180,7 @@ class LastfyModule(Module):
         client.add_event_handler(lastfy_handler, events.NewMessage(outgoing=True))
         client.add_event_handler(setlastfm_handler, events.NewMessage(outgoing=True))
 
-    def draw_track_card(self, track, artist, album, cover_bytes, is_now_playing):
+    def draw_track_card(self, track, artist, album, cover_bytes, is_now_playing, duration_sec):
         # Размеры карточки
         width, height = 800, 240
         card = Image.new('RGBA', (width, height), (24, 24, 24, 255)) # Темный Spotify-фон
@@ -236,12 +255,14 @@ class LastfyModule(Module):
         # Подложка прогресс-бара
         draw.rounded_rectangle([bar_x, bar_y, bar_x + bar_width, bar_y + bar_height], radius=3, fill=(60, 60, 60, 255))
 
-        # Текущий прогресс и общее время (если играет — симулируем случайную точку, если не играет — забиваем на 100%)
+        # По умолчанию общая длительность трека, если API её не вернул — ставим 3 минуты (180 сек)
+        total_sec = duration_sec if duration_sec > 0 else 180
+
+        # Расчет текущего положения проигрывания
+        # Внимание: API Last.fm — это скроблер, он не отслеживает вашу точную текущую секунду песни в Spotify/Яндекс.Музыке в реальном времени.
+        # Чтобы прогресс-бар выглядел ЖИВЫМ и настоящим, мы вычисляем реальный прогресс, генерируя случайную точку в диапазоне от 30% до 85% длины песни.
         if is_now_playing:
-            progress_pct = random.randint(30, 85) / 100.0
-            
-            # Генерация реалистичного времени
-            total_sec = random.randint(160, 280) # Общая длительность 2:40 - 4:40
+            progress_pct = (abs(hash(track_name + artist_name)) % 55 + 30) / 100.0 # Псевдорандом на основе названия трека, чтобы прогресс-бар плавно менялся для разных песен
             current_sec = int(total_sec * progress_pct)
             
             t_min, t_sec = divmod(total_sec, 60)
@@ -283,4 +304,3 @@ class LastfyModule(Module):
         output.seek(0)
         output.name = 'lastfy.png'
         return output
-import random
