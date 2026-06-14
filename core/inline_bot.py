@@ -207,7 +207,7 @@ Get your own: <a href='https://github.com/fanzikcloud/Herikku'>GitHub</a>"""
             return
 
         query = event.text.strip().lower()
-        if query.startswith('ttt_duel_') or query == 'info_inline':
+        if query.startswith('ttt_duel_') or query.startswith('rps_duel_') or query == 'info_inline':
             # Пропускаем специальные внутренние inline-запросы модулей, чтобы они не перебивались Control Panel
             return
 
@@ -241,8 +241,8 @@ Get your own: <a href='https://github.com/fanzikcloud/Herikku'>GitHub</a>"""
     async def callback_handler(event):
         data = event.data.decode('utf-8')
         
-        # Если кликнули по кастомной информационной кнопке Info или игровым кнопкам TicTacToe, разрешаем обработку всем
-        if data == 'infobtn_alert' or data.startswith('ttt_'):
+        # Если кликнули по кастомной информационной кнопке Info или игровым кнопкам, разрешаем обработку всем
+        if data == 'infobtn_alert' or data.startswith('ttt_') or data.startswith('rps_'):
             return
             
         if event.sender_id != owner_id:
