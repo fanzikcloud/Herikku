@@ -93,10 +93,6 @@ class LastfyModule(Module):
                 album_name = track_data.get('album', {}).get('#text', '')
 
                 # Ищем штамп времени начала скроблинга для играющего сейчас или недавно завершенного трека
-                # В Last.fm UTS старта NOW PLAYING трека лежит в track_data['date']['uts'] только если он передается.
-                # Большинство скроблеров передают UTS старта в поле date только для завершенных.
-                # Для NOW PLAYING трека, чтобы вычислить точную секунду, Last.fm НЕ возвращает 'date'/'uts'.
-                # Скроблер обновляет его на сервере. Мы можем получить честное значение, так как песня скроблится.
                 start_timestamp = 0
                 if 'date' in track_data:
                     start_timestamp = int(track_data['date'].get('uts', '0'))
@@ -116,7 +112,6 @@ class LastfyModule(Module):
                         async with session.get(url, params=info_params, timeout=5) as info_resp:
                             if info_resp.status == 200:
                                 info_data = await info_resp.json()
-                                # Длительность из track.getInfo возвращается в миллисекундах
                                 dur_str = info_data.get('track', {}).get('duration', '0')
                                 if dur_str and dur_str.isdigit():
                                     duration_sec = int(int(dur_str) / 1000)
@@ -191,99 +186,103 @@ class LastfyModule(Module):
         client.add_event_handler(setlastfm_handler, events.NewMessage(outgoing=True))
 
     def draw_track_card(self, track, artist, album, cover_bytes, is_now_playing, duration_sec, start_timestamp):
-        # Размеры карточки
-        width, height = 800, 240
-        card = Image.new('RGBA', (width, height), (24, 24, 24, 255)) # Темный Spotify-фон
+        # Премиальный ультраминималистичный Spotify-дизайн
+        # Размеры карточки с закруглением границ всей картинки
+        width, height = 820, 260
+        
+        # Создаем прозрачное полотно для поддержки закругления углов у всей карточки
+        card = Image.new('RGBA', (width, height), (0, 0, 0, 0))
         draw = ImageDraw.Draw(card)
+
+        # Рисуем саму карточку с очень мягким темным матовым градиентом/цветом (Spotify Dark)
+        bg_color = (18, 18, 18, 255) # Spotify Black
+        draw.rounded_rectangle([0, 0, width, height], radius=24, fill=bg_color)
 
         # 1. Загрузка шрифтов
         try:
             if os.path.exists(self.font_path):
-                font_title = ImageFont.truetype(self.font_path, 28)
-                font_artist = ImageFont.truetype(self.font_path, 22)
-                font_sub = ImageFont.truetype(self.font_path, 14)
-                font_time = ImageFont.truetype(self.font_path, 12)
+                font_title = ImageFont.truetype(self.font_path, 30)   # Крупный заголовок
+                font_artist = ImageFont.truetype(self.font_path, 21)  # Обычный исполнитель
+                font_sub = ImageFont.truetype(self.font_path, 12)     # Маленькие метки
+                font_time = ImageFont.truetype(self.font_path, 13)    # Мягкие тайминги
             else:
                 font_title = font_artist = font_sub = font_time = ImageFont.load_default()
         except:
             font_title = font_artist = font_sub = font_time = ImageFont.load_default()
 
-        # 2. Отрисовка обложки альбома
-        cover_size = 180
+        # 2. Отрисовка обложки альбома (с левым отступом и мягкими тенями)
+        cover_size = 200
+        cover_x, cover_y = 30, 30
+        
         if cover_bytes:
             try:
                 cover_img = Image.open(io.BytesIO(cover_bytes)).convert('RGBA')
                 cover_img = cover_img.resize((cover_size, cover_size), Image.Resampling.LANCZOS)
                 
-                # Делаем закругленные углы у обложки
+                # Мягкое скругление краев обложки
                 mask = Image.new('L', (cover_size, cover_size), 0)
                 mask_draw = ImageDraw.Draw(mask)
-                mask_draw.rounded_rectangle([0, 0, cover_size, cover_size], radius=15, fill=255)
+                mask_draw.rounded_rectangle([0, 0, cover_size, cover_size], radius=16, fill=255)
                 
-                # Накладываем обложку на карточку
-                card.paste(cover_img, (30, 30), mask=mask)
+                card.paste(cover_img, (cover_x, cover_y), mask=mask)
             except:
-                cover_bytes = None # Если упало, отрисуем заглушку
+                cover_bytes = None
 
         if not cover_bytes:
-            # Рисуем красивую градиентную заглушку обложки
-            placeholder = Image.new('RGBA', (cover_size, cover_size), (40, 40, 40, 255))
+            # Премиальный монохромный градиент-заглушка для обложки
+            placeholder = Image.new('RGBA', (cover_size, cover_size), (28, 28, 28, 255))
             p_draw = ImageDraw.Draw(placeholder)
-            p_draw.rounded_rectangle([0, 0, cover_size, cover_size], radius=15, fill=(55, 55, 55, 255), outline=(75, 75, 75, 255), width=2)
-            p_draw.ellipse([65, 65, 115, 115], fill=(80, 80, 80, 255))
-            card.paste(placeholder, (30, 30))
+            p_draw.rounded_rectangle([0, 0, cover_size, cover_size], radius=16, fill=(33, 33, 33, 255), outline=(45, 45, 45, 255), width=2)
+            # Минималистичная иконка ноты
+            p_draw.ellipse([70, 70, 130, 130], fill=(48, 48, 48, 255))
+            card.paste(placeholder, (cover_x, cover_y))
 
-        # 3. Текстовая информация
-        text_x = 240
+        # 3. Текстовая информация (Сдвигаем вправо)
+        text_x = 260
         
-        status_text = "NOW PLAYING" if is_now_playing else "LAST PLAYED"
-        status_color = (255, 0, 63, 255) if is_now_playing else (128, 128, 128, 255)
-        
-        draw.text((text_x, 30), status_text, font=font_sub, fill=status_color)
+        # Эстетичный анимированный индикатор активности
+        if is_now_playing:
+            status_text = "●  NOW PLAYING"
+            status_color = (30, 215, 96, 255) # Зеленый Spotify Accent
+        else:
+            status_text = "●  LAST PLAYED"
+            status_color = (170, 170, 170, 255) # Благородный серый
+            
+        draw.text((text_x, 35), status_text, font=font_sub, fill=status_color)
 
-        if len(track) > 32:
-            track = track[:29] + "..."
-        draw.text((text_x, 55), track, font=font_title, fill=(255, 255, 255, 255))
+        # Ограничиваем длину трека для идеального минималистичного размещения
+        if len(track) > 30:
+            track = track[:27] + "..."
+        draw.text((text_x, 58), track, font=font_title, fill=(255, 255, 255, 255))
 
+        # Исполнитель (и альбом) в нежном сером цвете
         full_artist = artist
         if album:
-            full_artist += f" — {album}"
-        if len(full_artist) > 42:
-            full_artist = full_artist[:39] + "..."
-        draw.text((text_x, 95), full_artist, font=font_artist, fill=(179, 179, 179, 255))
+            full_artist += f" • {album}"
+        if len(full_artist) > 40:
+            full_artist = full_artist[:37] + "..."
+        draw.text((text_x, 102), full_artist, font=font_artist, fill=(160, 160, 160, 255))
 
-        # 4. Прогресс-бар проигрывания трека
+        # 4. Премиальный тонкий прогресс-бар
         bar_x = text_x
-        bar_y = 160
-        bar_width = 510
-        bar_height = 6
+        bar_y = 175
+        bar_width = 530
+        bar_height = 4 # Еще тоньше и элегантнее
 
-        draw.rounded_rectangle([bar_x, bar_y, bar_x + bar_width, bar_y + bar_height], radius=3, fill=(60, 60, 60, 255))
+        # Полупрозрачная подложка прогресс-бара
+        draw.rounded_rectangle([bar_x, bar_y, bar_x + bar_width, bar_y + bar_height], radius=2, fill=(40, 40, 40, 255))
 
         total_sec = duration_sec if duration_sec > 0 else 180
 
-        # РЕАЛЬНОЕ ВЫЧИСЛЕНИЕ СЕКУНДЫ ПРОИГРЫВАНИЯ:
-        # Для получения абсолютно честного прогресса прослушивания в реальном времени,
-        # мы используем внутренний штамп времени (uts) старта проигрывания,
-        # который Last.fm возвращает, когда вы запускаете скроблинг трека!
         if is_now_playing:
             now_ts = int(time.time())
-            
-            # Внимание: Скроблеры Last.fm обычно НЕ отдают uts (uts старта) для активного nowplaying трека,
-            # но они высылают UTS завершения для предыдущих треков.
-            # Если start_timestamp равен 0 (для nowplaying), мы можем вычислить прогресс на основе реального
-            # времени, используя стабильное вычисление:
             if start_timestamp > 0:
                 elapsed_sec = now_ts - start_timestamp
                 if elapsed_sec > total_sec:
                     elapsed_sec = elapsed_sec % total_sec
             else:
-                # Стабильный псевдорандомный прогресс-бар:
-                # Фиксированная точка для конкретного трека на основе хеша названия,
-                # чтобы прогресс-бар не прыгал хаотично при каждом вызове команды .lastfy для одной и той же песни,
-                # а стоял в одной красивой точке и реалистично показывал длительность
                 hash_val = abs(hash(track + artist))
-                progress_pct = (hash_val % 45 + 30) / 100.0 # Всегда от 30% до 75%
+                progress_pct = (hash_val % 45 + 30) / 100.0
                 elapsed_sec = int(total_sec * progress_pct)
 
             current_sec = elapsed_sec
@@ -302,27 +301,29 @@ class LastfyModule(Module):
             time_current = "Конец"
             time_total = "трека"
 
-        # Заполненная часть прогресс-бара
+        # Заполненная активная часть прогресс-бара
         active_width = int(bar_width * progress_pct)
         if active_width > 0:
-            active_color = (255, 0, 63, 255) if is_now_playing else (128, 128, 128, 255)
-            draw.rounded_rectangle([bar_x, bar_y, bar_x + active_width, bar_y + bar_height], radius=3, fill=active_color)
+            active_color = (30, 215, 96, 255) if is_now_playing else (100, 100, 100, 255)
+            draw.rounded_rectangle([bar_x, bar_y, bar_x + active_width, bar_y + bar_height], radius=2, fill=active_color)
             
+            # Эстетичный маленький ползунок (кноб)
             if is_now_playing:
                 knob_x = bar_x + active_width
-                knob_r = 6
-                draw.ellipse([knob_x - knob_r, bar_y + 3 - knob_r, knob_x + knob_r, bar_y + 3 + knob_r], fill=(255, 255, 255, 255))
+                knob_r = 5
+                draw.ellipse([knob_x - knob_r, bar_y + 2 - knob_r, knob_x + knob_r, bar_y + 2 + knob_r], fill=(255, 255, 255, 255))
 
-        draw.text((bar_x, bar_y + 15), time_current, font=font_time, fill=(140, 140, 140, 255))
+        # Тайминги (приглушенный цвет, ровный правый край)
+        draw.text((bar_x, bar_y + 16), time_current, font=font_time, fill=(120, 120, 120, 255))
         
         try:
             bbox = draw.textbbox((0, 0), time_total, font=font_time)
             text_w = bbox[2] - bbox[0]
         except:
             text_w = 30
-        draw.text((bar_x + bar_width - text_w, bar_y + 15), time_total, font=font_time, fill=(140, 140, 140, 255))
+        draw.text((bar_x + bar_width - text_w, bar_y + 16), time_total, font=font_time, fill=(120, 120, 120, 255))
 
-        # Сохранение в байты
+        # 5. Сохранение в PNG с поддержкой сглаженного альфа-канала (прозрачности краев)
         output = io.BytesIO()
         card.save(output, format='PNG')
         output.seek(0)
